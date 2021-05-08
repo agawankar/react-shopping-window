@@ -1,50 +1,65 @@
-import React, { Component } from "react"
-import logo from "./logo.svg"
-import "./App.css"
-
-class LambdaDemo extends Component {
-  constructor(props) {
-    super(props)
-    this.state = { loading: false, msg: null }
-  }
-
-  handleClick = api => e => {
-    e.preventDefault()
-
-    this.setState({ loading: true })
-    fetch("/.netlify/functions/" + api)
-      .then(response => response.json())
-      .then(json => this.setState({ loading: false, msg: json.msg }))
-  }
-
-  render() {
-    const { loading, msg } = this.state
-
-    return (
-      <p>
-        <button onClick={this.handleClick("hello")}>{loading ? "Loading..." : "Call Lambda"}</button>
-        <button onClick={this.handleClick("async-dadjoke")}>{loading ? "Loading..." : "Call Async Lambda"}</button>
-        <br />
-        <span>{msg}</span>
-      </p>
-    )
-  }
-}
+import React, { Component } from "react";
+import { Route, Switch, withRouter, Redirect } from "react-router-dom";
+import { connect } from "react-redux";
+import { closeMaxProductModal, toogleSideBar } from "./store/actions";
+import MainLayout from "./Layouts/MainLayout";
+import * as Maincontainers from "./views";
+import "./App.css";
 
 class App extends Component {
   render() {
     return (
       <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <LambdaDemo />
-        </header>
+        <MainLayout
+          storeCartCount={this.props.storeCartItemsCount}
+          showModal={this.props.showModalProp}
+          closeModalProp={this.props.closeModalProp}
+          modalMessage={this.props.modalMessageProp}
+          showSideBar={this.props.showSideNavigationProp}
+          toggleSideBar={this.props.toggleSideBarProp}
+        >
+          <Switch>
+            <Route path={"/"} exact component={Maincontainers.HomePage} />
+            <Route path={"/all"} exact component={Maincontainers.AllPage} />
+            <Route
+              path={"/category/:category"}
+              component={Maincontainers.ProductCategoriesPage}
+            />
+            <Route path={"/sale"} component={Maincontainers.SalesPage} />
+            <Route path={"/cart"} component={Maincontainers.CartPage} />
+            <Route path={"/checkout"} component={Maincontainers.CheckoutPage} />
+            <Route
+              path={"/product/:productSlug"}
+              render={(props) => (
+                <Maincontainers.ProductDetailsPage
+                  key={props.match.params.productSlug}
+                  {...props}
+                />
+              )}
+            />
+            {/*always redirect to index*/}
+            <Redirect to={"/"} />
+          </Switch>
+        </MainLayout>
       </div>
-    )
+    );
   }
 }
 
-export default App
+const mapStateToProps = (state) => {
+  return {
+    storeCartItemsCount: state.cartTotal,
+    showModalProp: state.productMaxShowModal,
+    modalMessageProp: state.modalMessage,
+    showSideNavigationProp: state.showSideNavigation,
+  };
+};
+
+const mapDispatchToProps = (dispatch) => {
+  return {
+    closeModalProp: () => dispatch(closeMaxProductModal()),
+    toggleSideBarProp: () => dispatch(toogleSideBar()),
+  };
+};
+
+export default withRouter(connect(mapStateToProps, mapDispatchToProps)(App));
